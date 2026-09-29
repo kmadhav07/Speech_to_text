@@ -1,0 +1,30 @@
+# Hindi Speech-to-Text — Python dependencies
+# Install with: pip install -r requirements.txt
+#
+# Python version: 3.12 (required — 3.14 breaks Cadence-Fast)
+
+# ── Web framework ──────────────────────────────────────────────────────
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+
+# ── ASR engine ─────────────────────────────────────────────────────────
+vosk==0.3.44
+
+# ── Punctuation model (Cadence-Fast) ──────────────────────────────────
+cadence-punctuation
+transformers==4.51.3   # pinned — 5.x breaks Cadence-Fast (weight attr error)
+
+# ── Async task queue ───────────────────────────────────────────────────
+celery==5.3.6
+redis==5.0.3
+
+# ── Configuration ──────────────────────────────────────────────────────
+python-dotenv==1.0.1
+
+# ── Audio / video processing ───────────────────────────────────────────
+sounddevice==0.4.6     # mic input for main.py mic mode
+numpy                  # silence buffer warmup for Vosk
+
+# ── ML dependencies (pulled in by transformers / Cadence) ─────────────
+torch                  # CPU inference only — no CUDA needed

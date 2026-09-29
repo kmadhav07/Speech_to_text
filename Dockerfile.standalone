@@ -1,0 +1,38 @@
+# ============================================================
+# Standalone Production Dockerfile
+# Bakes Vosk Hindi and Cadence punctuation models into the image
+# Suitable for standalone deployments (Kubernetes, AWS ECS, GCP Cloud Run)
+# ============================================================
+
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    VOSK_MODEL_PATH=/models/vosk \
+    PUNCT_MODEL_PATH=/models/cadence
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ffmpeg git wget curl unzip libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r /app/requirements.txt
+
+# Create model and data directories
+RUN mkdir -p /models/vosk /models/cadence /app/outputs /app/data
+
+# Download Vosk Hindi model into the image
+RUN curl -L "https://alphacephei.com/vosk/models/vosk-model-hi-0.22.zip" -o /tmp/vosk.zip && \
+    unzip -q /tmp/vosk.zip -d /tmp/vosk_extracted && \
+    cp -r /tmp/vosk_extracted/vosk-model-hi-0.22/* /models/vosk/ && \
+    rm -rf /tmp/vosk.zip /tmp/vosk_extracted
+
+# Copy application source code
+COPY . /app
+
+EXPOSE 8000
+
+CMD ["python", "run.py", "api"]

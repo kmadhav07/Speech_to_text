@@ -1,0 +1,51 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  web:
+    build: .
+    env_file: .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VOSK_MODEL_PATH=/models/vosk
+      - PUNCT_MODEL_PATH=/models/cadence
+      - PRELOAD_MODELS=false
+    volumes:
+      - job_data:/app/data
+      - ./outputs:/app/outputs
+      - ${VOSK_MODEL_PATH_HOST:-./models/vosk}:/models/vosk:ro
+      - ${PUNCT_MODEL_PATH_HOST:-./models/cadence}:/models/cadence:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    command: ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+
+  worker:
+    build: .
+    env_file: .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VOSK_MODEL_PATH=/models/vosk
+      - PUNCT_MODEL_PATH=/models/cadence
+      - PRELOAD_MODELS=true
+    volumes:
+      - job_data:/app/data
+      - ./outputs:/app/outputs
+      - ${VOSK_MODEL_PATH_HOST:-./models/vosk}:/models/vosk:ro
+      - ${PUNCT_MODEL_PATH_HOST:-./models/cadence}:/models/cadence:ro
+    depends_on:
+      - redis
+    command: ["python", "run.py", "worker", "--workers", "1"]
+    restart: unless-stopped
+
+volumes:
+  job_data:
+  redis_data:

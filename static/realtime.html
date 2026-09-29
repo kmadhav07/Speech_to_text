@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hindi Real-time Transcription</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; }
+    input, button { font: inherit; padding: 10px; margin: 4px 0; }
+    input { width: min(100%, 520px); }
+    button { cursor: pointer; }
+    #status { margin: 16px 0; color: #555; }
+    #output { min-height: 180px; padding: 16px; border: 1px solid #ccc; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Hindi Real-time Transcription</h1>
+  <input id="apiKey" type="password" placeholder="API key">
+  <br>
+  <button id="start">Start microphone</button>
+  <button id="stop" disabled>Stop</button>
+  <div id="status">Disconnected</div>
+  <div id="output"></div>
+
+  <script>
+    let socket;
+    let audioContext;
+    let processor;
+    let source;
+    let stream;
+    const status = document.getElementById('status');
+    const output = document.getElementById('output');
+    const start = document.getElementById('start');
+    const stop = document.getElementById('stop');
+    let finalText = '';
+    let lastFinalAt = 0;
+
+    function downsample(buffer, inputRate, outputRate) {
+      if (inputRate === outputRate) return buffer;
+      const ratio = inputRate / outputRate;
+      const length = Math.round(buffer.length / ratio);
+      const result = new Float32Array(length);
+      for (let i = 0; i < length; i++) result[i] = buffer[Math.floor(i * ratio)];
+      return result;
+    }
+
+    function toPcm16(samples) {
+      const pcm = new Int16Array(samples.length);
+      for (let i = 0; i < samples.length; i++) {
+        const value = Math.max(-1, Math.min(1, samples[i]));
+        pcm[i] = value < 0 ? value * 0x8000 : value * 0x7fff;
+      }
+      return pcm.buffer;
+    }
+
+    start.onclick = async () => {
+      const key = document.getElementById('apiKey').value;
+      if (!key) { status.textContent = 'Enter the API key first'; return; }
+      finalText = '';
+      lastFinalAt = 0;
+      output.textContent = '';
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      socket = new WebSocket(`${protocol}://${location.host}/stream?api_key=${encodeURIComponent(key)}`);
+      socket.binaryType = 'arraybuffer';
+      socket.onopen = async () => {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
+        source = audioContext.createMediaStreamSource(stream);
+        processor = audioContext.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = event => {
+          if (socket.readyState !== WebSocket.OPEN) return;
+          const samples = downsample(event.inputBuffer.getChannelData(0), audioContext.sampleRate, 16000);
+          socket.send(toPcm16(samples));
+        };
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+        status.textContent = 'Listening';
+        start.disabled = true;
+        stop.disabled = false;
+      };
+      socket.onmessage = event => {
+        const message = JSON.parse(event.data);
+        if (!message.text) return;
+        if (message.type === 'partial') {
+          const sep = finalText ? ' ' : '';
+          output.textContent = finalText + sep + message.text;
+        } else if (message.type === 'final') {
+          const text = message.text.trim();
+          if (!text) return;
+          const sep = finalText ? ' ' : '';
+          finalText += sep + text;
+          output.textContent = finalText;
+        }
+      };
+      socket.onerror = () => { status.textContent = 'WebSocket error'; };
+      socket.onclose = () => { status.textContent = 'Disconnected'; };
+    };
+
+    stop.onclick = () => {
+      if (processor) processor.disconnect();
+      if (source) source.disconnect();
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      if (audioContext) audioContext.close();
+      if (socket) socket.close();
+      start.disabled = false;
+      stop.disabled = true;
+      status.textContent = 'Stopped';
+    };
+  </script>
+</body>
+</html>
