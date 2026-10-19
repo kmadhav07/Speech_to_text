@@ -18,7 +18,7 @@ Optional .env keys (shown with defaults)
   MAX_CONCURRENT        1
   OUTPUT_DIR            outputs
   HOST                  0.0.0.0
-  API_PORT              8000
+  API_PORT              8010
   CORS_ORIGINS          *   (comma-separated list, or * for all)
   REDIS_HOST            localhost
   REDIS_PORT            6379
@@ -69,7 +69,7 @@ CORS_ORIGINS = [o.strip() for o in _cors_raw.split(",")] if _cors_raw != "*" els
 
 # ── Server ─────────────────────────────────────────────────────────────
 HOST     = os.getenv("HOST",     "0.0.0.0")
-API_PORT = int(os.getenv("API_PORT", 8000))
+API_PORT = int(os.getenv("API_PORT", 8010))
 PRELOAD_MODELS = os.getenv("PRELOAD_MODELS", "true").lower() in {"1", "true", "yes", "on"}
 
 
