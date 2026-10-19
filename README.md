@@ -250,7 +250,7 @@ DATA_DIR=data         # Directory for runtime audio scratch
 
 # ── Server settings ───────────────────────────────────────────────────
 HOST=0.0.0.0
-API_PORT=8000
+API_PORT=8010
 CORS_ORIGINS=*        # Allowed CORS origins (* for all)
 PRELOAD_MODELS=false  # Fast API startup (worker owns heavy models)
 
@@ -307,7 +307,7 @@ All endpoints (except `/`, `/health`, and `/realtime`) require authentication he
 Transcribes an audio/video file and returns the completed text and segments directly in the response.
 
 ```bash
-curl -X POST http://localhost:8000/transcribe \
+curl -X POST http://localhost:8010/transcribe \
   -H "x-api-key: your-secure-api-key-here" \
   -F "file=@/path/to/audio.mp3"
 ```
@@ -387,20 +387,20 @@ Connects via WebSocket for streaming raw 16kHz 16-bit mono PCM chunks.
 ---
 
 ### 5. GET /realtime — Browser Live Microphone UI
-Open **[http://localhost:8000/realtime](http://localhost:8000/realtime)** in your browser to test live speech transcription using your microphone with continuous paragraph formatting.
+Open **[http://localhost:8010/realtime](http://localhost:8010/realtime)** in your browser to test live speech transcription using your microphone with continuous paragraph formatting.
 
 ---
 
 ### 6. GET /health — Health Check
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8010/health
 ```
 - Returns `{"status": "ok"}` (HTTP 200) when ready.
 
 ---
 
 ### 7. GET /docs — Interactive Swagger Documentation
-Open **[http://localhost:8000/docs](http://localhost:8000/docs)** to test all endpoints interactively in your browser.
+Open **[http://localhost:8010/docs](http://localhost:8010/docs)** to test all endpoints interactively in your browser.
 
 ---
 
@@ -490,7 +490,7 @@ docker compose exec web celery -A src.celery_worker.tasks inspect reserved
 ## Real-time Mic Streaming
 
 ### 1. Browser Web Interface
-Open **`http://localhost:8000/realtime`**, enter your API key, and click **Start microphone**.
+Open **`http://localhost:8010/realtime`**, enter your API key, and click **Start microphone**.
 - Speech is downsampled in the browser to 16 kHz mono.
 - Streamed over WebSocket to `/stream`.
 - Visual output formatted as continuous, natural paragraphs with live updates.
@@ -561,10 +561,10 @@ python run.py mic
 3. **Deploy Web API Service:**
    ```bash
    docker run -d --name hindi-stt-web \
-     -p 8000:8000 \
+     -p 8010:8010 \
      -e API_KEY=your-production-key \
      -e REDIS_HOST=your-redis-host \
-     your-org/hindi-stt:latest uvicorn src.api:app --host 0.0.0.0 --port 8000
+     your-org/hindi-stt:latest uvicorn src.api:app --host 0.0.0.0 --port 8010
    ```
 4. **Deploy Worker Service (Scalable):**
    ```bash
