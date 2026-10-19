@@ -4,7 +4,7 @@ api.py – FastAPI application setup only.
 All endpoints live in endpoints.py.
 
 Run with:
-    uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+    uvicorn api:app --host 0.0.0.0 --port 8010 --reload
 """
 
 import asyncio
